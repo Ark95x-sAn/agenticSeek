@@ -2,13 +2,17 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import os
+import time
 from pathlib import Path
 from typing import Any
 
 from .config import AppConfig
 from .task_runner import AsyncTaskRunner
 from .utils import utc_timestamp
+
+logger = logging.getLogger(__name__)
 
 
 class CometBridge:
@@ -87,6 +91,36 @@ class Ark95xOmniOrchestrator:
     def __init__(self, config: AppConfig) -> None:
         self.config = config
         self.task_runner = AsyncTaskRunner(retries=3, backoff_seconds=0.25)
+        self.agents: list[Any] = []
+        self.event_bus: dict[str, list[Any]] = {}
+        self.task_history: list[dict[str, Any]] = []
+        self._start_time = time.time()
+        logging.info("Orchestrator initialized")
+
+    def register_agent(self, agent: Any) -> None:
+        self.agents.append(agent)
+        logger.info("Agent registered: %s", type(agent).__name__)
+
+    def register_event(self, name: str, callback: Any) -> None:
+        if name not in self.event_bus:
+            self.event_bus[name] = []
+        self.event_bus[name].append(callback)
+
+    def emit_event(self, name: str, *args: Any) -> None:
+        logger.info(f"Event emitted: {name}")
+        for cb in self.event_bus.get(name, []):
+            cb(*args)
+
+    def health_check(self) -> dict[str, Any]:
+        return {
+            "status": "ok",
+            "uptime": time.time() - self._start_time,
+            "agent_count": len(self.agents),
+            "task_history_size": len(self.task_history),
+        }
+
+    def get_task_history(self, limit: int | None = None) -> list[dict[str, Any]]:
+        return self.task_history[-limit:] if limit else list(self.task_history)
 
     async def _route_task(self, payload: dict[str, Any]) -> dict[str, Any]:
         task_type = payload.get("type", "generic")
@@ -111,8 +145,16 @@ class Ark95xOmniOrchestrator:
             return "openai"
         return configured[0]
 
+    async def run_task(self, task: dict[str, Any]) -> dict[str, Any]:
+        logger.info("Running task: %s", task)
+        result = await self._route_task(task)
+        self.task_history.append({"task": str(task), "result": str(result), "timestamp": time.time()})
+        return result
+
     async def dispatch(self, payload: dict[str, Any]) -> dict[str, Any]:
         result = await self.task_runner.run("omni_dispatch", self._route_task, payload)
+        self.task_history.append({"task": str(payload), "result": str(result.result), "timestamp": time.time()})
+        logger.info("run_task completed")
         return {
             "success": result.success,
             "attempts": result.attempts,
@@ -133,3 +175,6 @@ class Ark95xOmniOrchestrator:
 
     def dispatch_sync(self, payload: dict[str, Any]) -> dict[str, Any]:
         return asyncio.run(self.dispatch(payload))
+
+    def run(self) -> dict[str, Any]:
+        return self.dispatch_sync({"type": "generic", "task_id": "run-default"})
