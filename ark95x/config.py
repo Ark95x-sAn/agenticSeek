@@ -20,6 +20,11 @@ class AppConfig:
     perplexity_api_key: str
     omni_webhook_ingest_url: str
     omni_webhook_secret: str
+    comet_webhook_url: str
+    comet_webhook_secret: str
+    log_level: str
+    max_sync_workers: int
+    task_timeout_seconds: int
 
     @property
     def provider_key_map(self) -> dict[str, str]:
@@ -33,11 +38,34 @@ class AppConfig:
     def configured_providers(self) -> list[str]:
         return [name for name, key in self.provider_key_map.items() if key]
 
+    @property
+    def all_webhook_urls(self) -> dict[str, str]:
+        return {
+            "omni_webhook_ingest_url": self.omni_webhook_ingest_url,
+            "comet_webhook_url": self.comet_webhook_url,
+        }
+
+    def validate(self) -> None:
+        if not self.data_root.exists():
+            raise ValueError(f"Configured data_root does not exist: {self.data_root}")
+        if not any(self.provider_key_map.values()):
+            raise ValueError("At least one provider API key must be configured")
+
 
 def _resolve_path(value: str, default: Path) -> Path:
     if not value:
         return default
     return Path(value).expanduser().resolve()
+
+
+def _get_int_env(name: str, default: int) -> int:
+    raw = os.getenv(name, "").strip()
+    if not raw:
+        return default
+    try:
+        return int(raw)
+    except ValueError:
+        return default
 
 
 def load_config(dotenv_path: str | None = None) -> AppConfig:
@@ -73,4 +101,9 @@ def load_config(dotenv_path: str | None = None) -> AppConfig:
         perplexity_api_key=os.getenv("PERPLEXITY_API_KEY", "").strip(),
         omni_webhook_ingest_url=os.getenv("OMNI_WEBHOOK_INGEST_URL", "").strip(),
         omni_webhook_secret=os.getenv("OMNI_WEBHOOK_SECRET", "").strip(),
+        comet_webhook_url=os.getenv("COMET_WEBHOOK_URL", "").strip(),
+        comet_webhook_secret=os.getenv("COMET_WEBHOOK_SECRET", "").strip(),
+        log_level=os.getenv("ARK95X_LOG_LEVEL", "INFO").strip() or "INFO",
+        max_sync_workers=_get_int_env("ARK95X_MAX_WORKERS", 4),
+        task_timeout_seconds=_get_int_env("ARK95X_TASK_TIMEOUT", 30),
     )
