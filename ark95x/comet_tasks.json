@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ark95x.local/schemas/comet_tasks.json",
+  "title": "Comet Task Interchange Schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "action_type",
+    "title",
+    "payload",
+    "priority",
+    "status",
+    "created_at",
+    "completed_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "action_type": {
+      "type": "string",
+      "enum": ["browse", "extract", "form_fill", "deploy"]
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "payload": {
+      "type": "object"
+    },
+    "priority": {
+      "type": "string",
+      "enum": ["normal", "high", "critical"]
+    },
+    "status": {
+      "type": "string",
+      "enum": ["queued", "in_progress", "completed", "failed"]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "completed_at": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    }
+  }
+}

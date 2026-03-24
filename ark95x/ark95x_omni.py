@@ -1,11 +1,86 @@
 from __future__ import annotations
 
 import asyncio
+import json
+import os
+from pathlib import Path
 from typing import Any
 
 from .config import AppConfig
 from .task_runner import AsyncTaskRunner
 from .utils import utc_timestamp
+
+
+class CometBridge:
+    def __init__(self, config: AppConfig) -> None:
+        self.config = config
+        self._schema = self._load_schema()
+
+    def _load_schema(self) -> dict[str, Any]:
+        schema_path = Path(__file__).with_name("comet_tasks.json")
+        with schema_path.open("r", encoding="utf-8") as fp:
+            return json.load(fp)
+
+    def _validate_task(self, task: dict[str, Any]) -> None:
+        required = self._schema.get("required", [])
+        for field in required:
+            if field not in task:
+                raise ValueError(f"Missing required field: {field}")
+
+        action_types = set(self._schema["properties"]["action_type"].get("enum", []))
+        priorities = set(self._schema["properties"]["priority"].get("enum", []))
+        statuses = set(self._schema["properties"]["status"].get("enum", []))
+
+        if task.get("action_type") not in action_types:
+            raise ValueError("Invalid action_type")
+        if task.get("priority") not in priorities:
+            raise ValueError("Invalid priority")
+        if task.get("status") not in statuses:
+            raise ValueError("Invalid status")
+        if not isinstance(task.get("payload"), dict):
+            raise ValueError("payload must be an object")
+
+    def dispatch_to_comet(
+        self,
+        action_type: str,
+        title: str,
+        payload: dict[str, Any],
+        priority: str = "normal",
+    ) -> dict[str, Any]:
+        task_payload = {
+            "id": payload.get("id", f"comet-{utc_timestamp()}"),
+            "action_type": action_type,
+            "title": title,
+            "payload": payload,
+            "priority": priority,
+            "status": "queued",
+            "created_at": utc_timestamp(),
+            "completed_at": None,
+        }
+        self._validate_task(task_payload)
+        return task_payload
+
+    def receive_from_comet(self, response_payload: dict[str, Any], signature: str) -> dict[str, Any]:
+        secret = getattr(self.config, "comet_webhook_secret", "") or os.getenv("COMET_WEBHOOK_SECRET", "")
+        if secret and signature != secret:
+            return {"accepted": False, "reason": "invalid_signature"}
+
+        return {
+            "accepted": True,
+            "ingested_at": utc_timestamp(),
+            "signature_valid": True,
+            "response": response_payload,
+        }
+
+    def get_bridge_config(self) -> dict[str, Any]:
+        webhook_url = getattr(self.config, "comet_webhook_url", "") or os.getenv("COMET_WEBHOOK_URL", "")
+        secret = getattr(self.config, "comet_webhook_secret", "") or os.getenv("COMET_WEBHOOK_SECRET", "")
+        return {
+            "webhook_url": webhook_url,
+            "webhook_secret_configured": bool(secret),
+            "supported_actions": self._schema.get("properties", {}).get("action_type", {}).get("enum", []),
+            "supported_priorities": self._schema.get("properties", {}).get("priority", {}).get("enum", []),
+        }
 
 
 class Ark95xOmniOrchestrator:
