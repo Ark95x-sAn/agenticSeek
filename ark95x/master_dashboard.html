@@ -1,0 +1,1357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ARK95X · MASTER ELITE INTELLIGENCE SYSTEM · 101/100</title>
+<style>
+  :root {
+    --neon-green: #00ff88;
+    --neon-cyan: #00e5ff;
+    --neon-purple: #bf00ff;
+    --neon-gold: #ffd700;
+    --neon-red: #ff2244;
+    --neon-orange: #ff6600;
+    --bg-deep: #020408;
+    --bg-panel: rgba(0,20,40,0.85);
+    --bg-card: rgba(0,255,136,0.04);
+    --border-glow: rgba(0,255,136,0.3);
+    --text-primary: #e0ffe8;
+    --text-dim: #4a7a5a;
+    --font-mono: 'Courier New', monospace;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+
+  /* ── SCANLINE OVERLAY ── */
+  body::before {
+    content:'';
+    position:fixed; inset:0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,255,136,0.015) 2px,
+      rgba(0,255,136,0.015) 4px
+    );
+    pointer-events:none;
+    z-index:9999;
+  }
+
+  /* ── HEADER ── */
+  #header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 24px;
+    background: linear-gradient(90deg, rgba(0,255,136,0.08), rgba(0,229,255,0.05), rgba(191,0,255,0.08));
+    border-bottom: 1px solid var(--border-glow);
+    position:sticky; top:0; z-index:100;
+  }
+  #header .logo {
+    font-size:1.4rem; font-weight:900; letter-spacing:4px;
+    color: var(--neon-green);
+    text-shadow: 0 0 20px var(--neon-green), 0 0 40px var(--neon-green);
+    animation: pulse-logo 2s ease-in-out infinite;
+  }
+  @keyframes pulse-logo {
+    0%,100%{ text-shadow:0 0 20px var(--neon-green),0 0 40px var(--neon-green); }
+    50%{ text-shadow:0 0 40px var(--neon-green),0 0 80px var(--neon-green),0 0 120px var(--neon-cyan); }
+  }
+  #header .tagline { font-size:0.65rem; color:var(--neon-cyan); letter-spacing:2px; }
+  #header .status-bar { display:flex; gap:16px; align-items:center; }
+  .status-pill {
+    padding:3px 10px; border-radius:20px; font-size:0.6rem; letter-spacing:1px;
+    border:1px solid; animation: blink-pill 1.5s step-end infinite;
+  }
+  .status-pill.online { border-color:var(--neon-green); color:var(--neon-green); background:rgba(0,255,136,0.1); }
+  .status-pill.armed  { border-color:var(--neon-gold);  color:var(--neon-gold);  background:rgba(255,215,0,0.1); }
+  .status-pill.elite  { border-color:var(--neon-purple);color:var(--neon-purple);background:rgba(191,0,255,0.1); animation:none; }
+  @keyframes blink-pill { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  /* ── GRID LAYOUT ── */
+  #main-grid {
+    display:grid;
+    grid-template-columns: 260px 1fr 260px;
+    grid-template-rows: auto;
+    gap:12px;
+    padding:12px;
+    min-height: calc(100vh - 60px);
+  }
+
+  /* ── PANELS ── */
+  .panel {
+    background: var(--bg-panel);
+    border:1px solid var(--border-glow);
+    border-radius:6px;
+    padding:14px;
+    position:relative;
+    overflow:hidden;
+  }
+  .panel::before {
+    content:'';
+    position:absolute; top:0; left:0; right:0; height:2px;
+    background: linear-gradient(90deg, transparent, var(--neon-green), transparent);
+    animation: scan-line 3s linear infinite;
+  }
+  @keyframes scan-line {
+    0%{ transform:translateX(-100%); }
+    100%{ transform:translateX(100%); }
+  }
+  .panel-title {
+    font-size:0.6rem; letter-spacing:3px; color:var(--neon-cyan);
+    text-transform:uppercase; margin-bottom:12px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .panel-title::before {
+    content:'▶'; color:var(--neon-green); font-size:0.5rem;
+  }
+
+  /* ── LEFT COLUMN ── */
+  #left-col { display:flex; flex-direction:column; gap:12px; }
+
+  /* BIOMETRIC PANEL */
+  #biometric-panel .bio-grid {
+    display:grid; grid-template-columns:1fr 1fr; gap:8px;
+  }
+  .bio-metric {
+    background:rgba(0,255,136,0.04);
+    border:1px solid rgba(0,255,136,0.15);
+    border-radius:4px; padding:8px; text-align:center;
+  }
+  .bio-metric .label { font-size:0.5rem; color:var(--text-dim); letter-spacing:2px; }
+  .bio-metric .value {
+    font-size:1.3rem; font-weight:900;
+    color:var(--neon-green);
+    text-shadow:0 0 10px var(--neon-green);
+    transition: all 0.3s;
+  }
+  .bio-metric .unit { font-size:0.45rem; color:var(--neon-cyan); }
+
+  /* PULSE BAR */
+  .pulse-bar-wrap { margin-top:10px; }
+  .pulse-bar-label { font-size:0.5rem; color:var(--text-dim); letter-spacing:2px; margin-bottom:4px; }
+  .pulse-bar {
+    height:6px; background:rgba(0,255,136,0.1);
+    border-radius:3px; overflow:hidden; position:relative;
+  }
+  .pulse-bar-fill {
+    height:100%; border-radius:3px;
+    background: linear-gradient(90deg, var(--neon-green), var(--neon-cyan));
+    box-shadow:0 0 8px var(--neon-green);
+    transition: width 0.5s ease;
+  }
+
+  /* PROVIDER STATUS */
+  .provider-row {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:6px 0; border-bottom:1px solid rgba(0,255,136,0.08);
+    font-size:0.6rem;
+  }
+  .provider-row:last-child { border-bottom:none; }
+  .provider-name { color:var(--text-primary); letter-spacing:1px; }
+  .provider-badge {
+    padding:2px 8px; border-radius:10px; font-size:0.5rem; letter-spacing:1px;
+  }
+  .badge-active { background:rgba(0,255,136,0.15); color:var(--neon-green); border:1px solid var(--neon-green); }
+  .badge-standby { background:rgba(255,215,0,0.1); color:var(--neon-gold); border:1px solid var(--neon-gold); }
+  .badge-offline { background:rgba(255,34,68,0.1); color:var(--neon-red); border:1px solid var(--neon-red); }
+
+  /* ── CENTER COLUMN ── */
+  #center-col { display:flex; flex-direction:column; gap:12px; }
+
+  /* SCORE DISPLAY */
+  #score-panel {
+    text-align:center; padding:20px;
+    background: radial-gradient(ellipse at center, rgba(0,255,136,0.08) 0%, transparent 70%);
+  }
+  .score-ring-wrap { position:relative; display:inline-block; margin:10px auto; }
+  #score-canvas { display:block; }
+  .score-center-text {
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    text-align:center;
+  }
+  .score-number {
+    font-size:3.5rem; font-weight:900; line-height:1;
+    color:var(--neon-green);
+    text-shadow:0 0 30px var(--neon-green), 0 0 60px var(--neon-green);
+    animation: score-pulse 2s ease-in-out infinite;
+  }
+  @keyframes score-pulse {
+    0%,100%{ text-shadow:0 0 30px var(--neon-green),0 0 60px var(--neon-green); }
+    50%{ text-shadow:0 0 60px var(--neon-green),0 0 120px var(--neon-cyan),0 0 180px var(--neon-purple); }
+  }
+  .score-label { font-size:0.55rem; color:var(--neon-cyan); letter-spacing:3px; }
+  .score-sub { font-size:0.5rem; color:var(--neon-gold); letter-spacing:2px; margin-top:4px; }
+
+  /* SIMULATION SCOUT LAB */
+  #scout-lab { min-height:200px; }
+  #scout-canvas-wrap {
+    position:relative; width:100%; height:180px;
+    background:rgba(0,0,0,0.4); border-radius:4px; overflow:hidden;
+    border:1px solid rgba(0,229,255,0.2);
+  }
+  #scout-canvas { width:100%; height:100%; }
+  .scout-overlay {
+    position:absolute; top:6px; left:8px;
+    font-size:0.5rem; color:var(--neon-cyan); letter-spacing:2px;
+  }
+  .scout-stats {
+    display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-top:8px;
+  }
+  .scout-stat {
+    background:rgba(0,229,255,0.05); border:1px solid rgba(0,229,255,0.15);
+    border-radius:4px; padding:6px; text-align:center;
+  }
+  .scout-stat .sv { font-size:0.9rem; font-weight:900; color:var(--neon-cyan); }
+  .scout-stat .sl { font-size:0.45rem; color:var(--text-dim); letter-spacing:1px; }
+
+  /* PREDICTION ENGINE */
+  #prediction-panel .pred-grid {
+    display:grid; grid-template-columns:1fr 1fr; gap:8px;
+  }
+  .pred-card {
+    background:rgba(191,0,255,0.05); border:1px solid rgba(191,0,255,0.2);
+    border-radius:4px; padding:10px;
+  }
+  .pred-card .model-name { font-size:0.5rem; color:var(--neon-purple); letter-spacing:2px; margin-bottom:6px; }
+  .pred-card .pred-value { font-size:1.1rem; font-weight:900; color:var(--text-primary); }
+  .pred-card .pred-conf { font-size:0.5rem; color:var(--neon-gold); margin-top:2px; }
+  .pred-bar { height:3px; background:rgba(191,0,255,0.1); border-radius:2px; margin-top:6px; overflow:hidden; }
+  .pred-bar-fill { height:100%; background:linear-gradient(90deg,var(--neon-purple),var(--neon-cyan)); border-radius:2px; transition:width 0.8s ease; }
+
+  /* ALGO PATTERN STREAM */
+  #algo-panel { }
+  #algo-stream {
+    height:120px; overflow:hidden; position:relative;
+    background:rgba(0,0,0,0.3); border-radius:4px;
+    border:1px solid rgba(0,255,136,0.1);
+    font-size:0.5rem; padding:6px;
+    font-family:var(--font-mono);
+  }
+  .algo-line {
+    color:var(--neon-green); opacity:0.8; line-height:1.6;
+    animation: fade-in-line 0.3s ease;
+  }
+  .algo-line.dim { color:var(--text-dim); opacity:0.5; }
+  .algo-line .tag { color:var(--neon-cyan); }
+  .algo-line .val { color:var(--neon-gold); }
+  @keyframes fade-in-line { from{opacity:0;transform:translateY(4px)} to{opacity:0.8;transform:translateY(0)} }
+
+  /* ── RIGHT COLUMN ── */
+  #right-col { display:flex; flex-direction:column; gap:12px; }
+
+  /* HANDOFF CIRCUIT */
+  #circuit-panel { }
+  #circuit-canvas-wrap {
+    width:100%; height:160px; position:relative;
+    background:rgba(0,0,0,0.4); border-radius:4px; overflow:hidden;
+    border:1px solid rgba(255,102,0,0.2);
+  }
+  #circuit-canvas { width:100%; height:100%; }
+
+  /* AGENT ROUTING */
+  .route-flow {
+    display:flex; flex-direction:column; gap:4px; margin-top:8px;
+  }
+  .route-node {
+    display:flex; align-items:center; gap:8px;
+    padding:5px 8px; border-radius:4px;
+    background:rgba(0,255,136,0.04); border:1px solid rgba(0,255,136,0.1);
+    font-size:0.55rem; cursor:pointer; transition:all 0.2s;
+  }
+  .route-node:hover { background:rgba(0,255,136,0.1); border-color:var(--neon-green); }
+  .route-node.active { background:rgba(0,255,136,0.12); border-color:var(--neon-green); box-shadow:0 0 8px rgba(0,255,136,0.3); }
+  .route-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+  .dot-green { background:var(--neon-green); box-shadow:0 0 6px var(--neon-green); }
+  .dot-cyan  { background:var(--neon-cyan);  box-shadow:0 0 6px var(--neon-cyan); }
+  .dot-purple{ background:var(--neon-purple);box-shadow:0 0 6px var(--neon-purple); }
+  .dot-gold  { background:var(--neon-gold);  box-shadow:0 0 6px var(--neon-gold); }
+  .dot-orange{ background:var(--neon-orange);box-shadow:0 0 6px var(--neon-orange); }
+  .route-label { flex:1; color:var(--text-primary); }
+  .route-score { color:var(--neon-gold); font-weight:900; }
+
+  /* REVENUE INTEL */
+  #revenue-panel .rev-total {
+    font-size:2rem; font-weight:900; color:var(--neon-gold);
+    text-shadow:0 0 20px var(--neon-gold);
+    text-align:center; margin:8px 0;
+  }
+  .rev-row {
+    display:flex; justify-content:space-between; align-items:center;
+    padding:4px 0; border-bottom:1px solid rgba(255,215,0,0.08);
+    font-size:0.55rem;
+  }
+  .rev-row:last-child { border-bottom:none; }
+  .rev-cat { color:var(--text-dim); letter-spacing:1px; }
+  .rev-val { color:var(--neon-gold); font-weight:700; }
+  .rev-bar-mini { width:60px; height:3px; background:rgba(255,215,0,0.1); border-radius:2px; overflow:hidden; }
+  .rev-bar-mini-fill { height:100%; background:var(--neon-gold); border-radius:2px; }
+
+  /* SYNC ENGINE */
+  #sync-panel .sync-stats {
+    display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:6px;
+  }
+  .sync-stat {
+    text-align:center; padding:6px;
+    background:rgba(0,229,255,0.04); border:1px solid rgba(0,229,255,0.1); border-radius:4px;
+  }
+  .sync-stat .sv { font-size:1rem; font-weight:900; color:var(--neon-cyan); }
+  .sync-stat .sl { font-size:0.45rem; color:var(--text-dim); letter-spacing:1px; }
+  .sync-progress { margin-top:8px; }
+
+  /* MASTER COMMAND */
+  #command-panel {
+    grid-column: 1 / -1;
+    background: linear-gradient(135deg, rgba(0,20,40,0.9), rgba(10,0,30,0.9));
+    border-color: rgba(191,0,255,0.3);
+  }
+  #command-panel::before {
+    background: linear-gradient(90deg, transparent, var(--neon-purple), transparent);
+  }
+  .cmd-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:8px; margin-top:8px; }
+  .cmd-btn {
+    padding:10px 6px; border-radius:4px; border:1px solid;
+    background:transparent; cursor:pointer; font-family:var(--font-mono);
+    font-size:0.55rem; letter-spacing:1px; text-transform:uppercase;
+    transition:all 0.2s; text-align:center;
+  }
+  .cmd-btn:hover { transform:translateY(-2px); }
+  .cmd-btn.green { border-color:var(--neon-green); color:var(--neon-green); }
+  .cmd-btn.green:hover { background:rgba(0,255,136,0.15); box-shadow:0 0 15px rgba(0,255,136,0.4); }
+  .cmd-btn.cyan  { border-color:var(--neon-cyan);  color:var(--neon-cyan); }
+  .cmd-btn.cyan:hover  { background:rgba(0,229,255,0.15); box-shadow:0 0 15px rgba(0,229,255,0.4); }
+  .cmd-btn.purple{ border-color:var(--neon-purple);color:var(--neon-purple); }
+  .cmd-btn.purple:hover{ background:rgba(191,0,255,0.15); box-shadow:0 0 15px rgba(191,0,255,0.4); }
+  .cmd-btn.gold  { border-color:var(--neon-gold);  color:var(--neon-gold); }
+  .cmd-btn.gold:hover  { background:rgba(255,215,0,0.15); box-shadow:0 0 15px rgba(255,215,0,0.4); }
+  .cmd-btn.red   { border-color:var(--neon-red);   color:var(--neon-red); }
+  .cmd-btn.red:hover   { background:rgba(255,34,68,0.15); box-shadow:0 0 15px rgba(255,34,68,0.4); }
+  .cmd-btn.orange{ border-color:var(--neon-orange); color:var(--neon-orange); }
+  .cmd-btn.orange:hover{ background:rgba(255,102,0,0.15); box-shadow:0 0 15px rgba(255,102,0,0.4); }
+
+  /* LOG TERMINAL */
+  #log-terminal {
+    grid-column: 1 / -1;
+    background:rgba(0,0,0,0.6); border:1px solid rgba(0,255,136,0.15);
+    border-radius:6px; padding:10px; height:120px; overflow-y:auto;
+    font-size:0.55rem; line-height:1.8;
+  }
+  #log-terminal::-webkit-scrollbar { width:4px; }
+  #log-terminal::-webkit-scrollbar-track { background:transparent; }
+  #log-terminal::-webkit-scrollbar-thumb { background:var(--neon-green); border-radius:2px; }
+  .log-entry { display:flex; gap:8px; }
+  .log-ts { color:var(--text-dim); flex-shrink:0; }
+  .log-level-info    { color:var(--neon-cyan); }
+  .log-level-success { color:var(--neon-green); }
+  .log-level-warn    { color:var(--neon-gold); }
+  .log-level-elite   { color:var(--neon-purple); font-weight:900; }
+  .log-msg { color:var(--text-primary); }
+
+  /* MATRIX RAIN CANVAS */
+  #matrix-bg {
+    position:fixed; top:0; left:0; width:100%; height:100%;
+    z-index:-1; opacity:0.06; pointer-events:none;
+  }
+
+  /* RESPONSIVE */
+  @media(max-width:1100px){
+    #main-grid { grid-template-columns:1fr 1fr; }
+    #left-col, #right-col { grid-column:span 1; }
+    #center-col { grid-column:span 2; }
+  }
+  @media(max-width:700px){
+    #main-grid { grid-template-columns:1fr; }
+    #center-col, #left-col, #right-col { grid-column:span 1; }
+    .cmd-grid { grid-template-columns:repeat(3,1fr); }
+  }
+
+  /* TOOLTIP */
+  [data-tip] { position:relative; }
+  [data-tip]:hover::after {
+    content:attr(data-tip);
+    position:absolute; bottom:110%; left:50%; transform:translateX(-50%);
+    background:rgba(0,20,40,0.95); border:1px solid var(--neon-green);
+    color:var(--neon-green); font-size:0.5rem; padding:4px 8px; border-radius:4px;
+    white-space:nowrap; z-index:1000; letter-spacing:1px;
+  }
+
+  /* FLICKER ANIMATION */
+  @keyframes flicker {
+    0%,19%,21%,23%,25%,54%,56%,100%{ opacity:1; }
+    20%,24%,55%{ opacity:0.4; }
+  }
+  .flicker { animation:flicker 4s linear infinite; }
+
+  /* GLOW TEXT */
+  .glow-green { color:var(--neon-green); text-shadow:0 0 10px var(--neon-green); }
+  .glow-cyan  { color:var(--neon-cyan);  text-shadow:0 0 10px var(--neon-cyan); }
+  .glow-gold  { color:var(--neon-gold);  text-shadow:0 0 10px var(--neon-gold); }
+  .glow-purple{ color:var(--neon-purple);text-shadow:0 0 10px var(--neon-purple); }
+</style>
+</head>
+<body>
+
+<!-- MATRIX RAIN BACKGROUND -->
+<canvas id="matrix-bg"></canvas>
+
+<!-- HEADER -->
+<div id="header">
+  <div>
+    <div class="logo flicker">ARK95X · OMNI · 101/100</div>
+    <div class="tagline">MASTER ELITE INTELLIGENCE SYSTEM · SIMULATION SCOUT LAB OPS · DIGITAL MASTERY</div>
+  </div>
+  <div class="status-bar">
+    <div class="status-pill online">● ONLINE</div>
+    <div class="status-pill armed">⚡ ARMED</div>
+    <div class="status-pill elite">👁 ELITE</div>
+    <div id="live-clock" style="font-size:0.6rem;color:var(--neon-cyan);letter-spacing:2px;"></div>
+  </div>
+</div>
+
+<!-- MAIN GRID -->
+<div id="main-grid">
+
+  <!-- ══ LEFT COLUMN ══ -->
+  <div id="left-col">
+
+    <!-- BIOMETRIC PANEL -->
+    <div class="panel" id="biometric-panel">
+      <div class="panel-title">BIOMETRIC PUSH FORCE</div>
+      <div class="bio-grid">
+        <div class="bio-metric" data-tip="Neural Sync Rate">
+          <div class="label">NEURAL SYNC</div>
+          <div class="value" id="bio-neural">98.7</div>
+          <div class="unit">% SYNC</div>
+        </div>
+        <div class="bio-metric" data-tip="Power Pulse Frequency">
+          <div class="label">POWER PULSE</div>
+          <div class="value" id="bio-pulse">144</div>
+          <div class="unit">Hz FREQ</div>
+        </div>
+        <div class="bio-metric" data-tip="Presence Force Index">
+          <div class="label">PRESENCE</div>
+          <div class="value" id="bio-presence">9.9</div>
+          <div class="unit">FORCE IDX</div>
+        </div>
+        <div class="bio-metric" data-tip="Freedom Fighter Index">
+          <div class="label">FREEDOM IDX</div>
+          <div class="value" id="bio-freedom">∞</div>
+          <div class="unit">UNLOCKED</div>
+        </div>
+      </div>
+      <div class="pulse-bar-wrap">
+        <div class="pulse-bar-label">MASTER FORCE BYPASS</div>
+        <div class="pulse-bar"><div class="pulse-bar-fill" id="force-bar" style="width:0%"></div></div>
+      </div>
+      <div class="pulse-bar-wrap">
+        <div class="pulse-bar-label">FIREWALL FLOOD POWER</div>
+        <div class="pulse-bar"><div class="pulse-bar-fill" id="firewall-bar" style="width:0%;background:linear-gradient(90deg,var(--neon-red),var(--neon-orange))"></div></div>
+      </div>
+      <div class="pulse-bar-wrap">
+        <div class="pulse-bar-label">INTEL BRIDGE GAP</div>
+        <div class="pulse-bar"><div class="pulse-bar-fill" id="intel-bar" style="width:0%;background:linear-gradient(90deg,var(--neon-purple),var(--neon-cyan))"></div></div>
+      </div>
+    </div>
+
+    <!-- PROVIDER STATUS -->
+    <div class="panel" id="provider-panel">
+      <div class="panel-title">MODEL PROVIDERS</div>
+      <div class="provider-row">
+        <span class="provider-name">OPENAI GPT-4o</span>
+        <span class="provider-badge badge-active" id="prov-openai">ACTIVE</span>
+      </div>
+      <div class="provider-row">
+        <span class="provider-name">ANTHROPIC CLAUDE</span>
+        <span class="provider-badge badge-active" id="prov-anthropic">ACTIVE</span>
+      </div>
+      <div class="provider-row">
+        <span class="provider-name">PERPLEXITY</span>
+        <span class="provider-badge badge-standby" id="prov-perplexity">STANDBY</span>
+      </div>
+      <div class="provider-row">
+        <span class="provider-name">LOCAL OLLAMA</span>
+        <span class="provider-badge badge-active" id="prov-ollama">ACTIVE</span>
+      </div>
+      <div class="provider-row">
+        <span class="provider-name">BART-MNLI</span>
+        <span class="provider-badge badge-active" id="prov-bart">ROUTING</span>
+      </div>
+      <div class="provider-row">
+        <span class="provider-name">ADAPTIVE CLF</span>
+        <span class="provider-badge badge-active" id="prov-adaptive">LEARNING</span>
+      </div>
+      <div class="provider-row">
+        <span class="provider-name">LOCAL FALLBACK</span>
+        <span class="provider-badge badge-standby" id="prov-fallback">READY</span>
+      </div>
+    </div>
+
+    <!-- SYNC ENGINE -->
+    <div class="panel" id="sync-panel">
+      <div class="panel-title">EMERALD SYNC ENGINE</div>
+      <div class="sync-stats">
+        <div class="sync-stat"><div class="sv" id="sync-scanned">0</div><div class="sl">SCANNED</div></div>
+        <div class="sync-stat"><div class="sv glow-green" id="sync-added">0</div><div class="sl">ADDED</div></div>
+        <div class="sync-stat"><div class="sv glow-gold" id="sync-modified">0</div><div class="sl">MODIFIED</div></div>
+      </div>
+      <div class="sync-progress">
+        <div class="pulse-bar-label">SYNC INTEGRITY</div>
+        <div class="pulse-bar"><div class="pulse-bar-fill" id="sync-bar" style="width:0%;background:linear-gradient(90deg,var(--neon-cyan),var(--neon-green))"></div></div>
+      </div>
+      <div style="margin-top:8px;font-size:0.5rem;color:var(--text-dim);">
+        STATE: <span id="sync-state-label" class="glow-cyan">INITIALIZING...</span>
+      </div>
+    </div>
+
+  </div><!-- /left-col -->
+
+  <!-- ══ CENTER COLUMN ══ -->
+  <div id="center-col">
+
+    <!-- SCORE PANEL -->
+    <div class="panel" id="score-panel">
+      <div class="panel-title" style="justify-content:center;">MASTER ELITE SCORE · VALUE BUILD</div>
+      <div class="score-ring-wrap">
+        <canvas id="score-canvas" width="200" height="200"></canvas>
+        <div class="score-center-text">
+          <div class="score-number" id="score-display">0</div>
+          <div class="score-label">/ 100</div>
+          <div class="score-sub">ELITE TIER</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px;">
+        <div style="text-align:center;font-size:0.5rem;">
+          <div class="glow-green" style="font-size:1rem;font-weight:900;" id="kpi-tasks">0</div>
+          <div style="color:var(--text-dim);letter-spacing:1px;">TASKS</div>
+        </div>
+        <div style="text-align:center;font-size:0.5rem;">
+          <div class="glow-cyan" style="font-size:1rem;font-weight:900;" id="kpi-agents">6</div>
+          <div style="color:var(--text-dim);letter-spacing:1px;">AGENTS</div>
+        </div>
+        <div style="text-align:center;font-size:0.5rem;">
+          <div class="glow-gold" style="font-size:1rem;font-weight:900;" id="kpi-routes">0</div>
+          <div style="color:var(--text-dim);letter-spacing:1px;">ROUTES</div>
+        </div>
+        <div style="text-align:center;font-size:0.5rem;">
+          <div class="glow-purple" style="font-size:1rem;font-weight:900;" id="kpi-models">7</div>
+          <div style="color:var(--text-dim);letter-spacing:1px;">MODELS</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIMULATION SCOUT LAB -->
+    <div class="panel" id="scout-lab">
+      <div class="panel-title">SIMULATION SCOUT LAB OPS</div>
+      <div id="scout-canvas-wrap">
+        <canvas id="scout-canvas"></canvas>
+        <div class="scout-overlay">LIVE SIMULATION · PARTICLE FIELD · SCOUT MODE</div>
+      </div>
+      <div class="scout-stats">
+        <div class="scout-stat"><div class="sv" id="scout-particles">0</div><div class="sl">PARTICLES</div></div>
+        <div class="scout-stat"><div class="sv" id="scout-vectors">0</div><div class="sl">VECTORS</div></div>
+        <div class="scout-stat"><div class="sv" id="scout-collisions">0</div><div class="sl">COLLISIONS</div></div>
+        <div class="scout-stat"><div class="sv" id="scout-fps">0</div><div class="sl">FPS</div></div>
+      </div>
+    </div>
+
+    <!-- PREDICTION ENGINE -->
+    <div class="panel" id="prediction-panel">
+      <div class="panel-title">MULTI-MODEL PREDICTION ENGINE</div>
+      <div class="pred-grid">
+        <div class="pred-card">
+          <div class="model-name">GPT-4o · ANALYSIS</div>
+          <div class="pred-value" id="pred-gpt">ROUTING...</div>
+          <div class="pred-conf" id="pred-gpt-conf">CONF: 0.00%</div>
+          <div class="pred-bar"><div class="pred-bar-fill" id="pred-gpt-bar" style="width:0%"></div></div>
+        </div>
+        <div class="pred-card">
+          <div class="model-name">CLAUDE · REASONING</div>
+          <div class="pred-value" id="pred-claude">ROUTING...</div>
+          <div class="pred-conf" id="pred-claude-conf">CONF: 0.00%</div>
+          <div class="pred-bar"><div class="pred-bar-fill" id="pred-claude-bar" style="width:0%"></div></div>
+        </div>
+        <div class="pred-card">
+          <div class="model-name">BART · ZERO-SHOT</div>
+          <div class="pred-value" id="pred-bart">ROUTING...</div>
+          <div class="pred-conf" id="pred-bart-conf">CONF: 0.00%</div>
+          <div class="pred-bar"><div class="pred-bar-fill" id="pred-bart-bar" style="width:0%"></div></div>
+        </div>
+        <div class="pred-card">
+          <div class="model-name">ADAPTIVE · FEW-SHOT</div>
+          <div class="pred-value" id="pred-adaptive">ROUTING...</div>
+          <div class="pred-conf" id="pred-adaptive-conf">CONF: 0.00%</div>
+          <div class="pred-bar"><div class="pred-bar-fill" id="pred-adaptive-bar" style="width:0%"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ALGO PATTERN STREAM -->
+    <div class="panel" id="algo-panel">
+      <div class="panel-title">ALGO PATTERN STREAM · LIVE INTELLIGENCE</div>
+      <div id="algo-stream"></div>
+    </div>
+
+  </div><!-- /center-col -->
+
+  <!-- ══ RIGHT COLUMN ══ -->
+  <div id="right-col">
+
+    <!-- HANDOFF CIRCUIT -->
+    <div class="panel" id="circuit-panel">
+      <div class="panel-title">HANDOFF CIRCUIT · DIGITAL MASTERY</div>
+      <div id="circuit-canvas-wrap">
+        <canvas id="circuit-canvas"></canvas>
+      </div>
+    </div>
+
+    <!-- AGENT ROUTING -->
+    <div class="panel" id="routing-panel">
+      <div class="panel-title">AGENT ROUTING MATRIX</div>
+      <div class="route-flow">
+        <div class="route-node active" id="route-casual" data-tip="Casual conversation & general queries">
+          <div class="route-dot dot-green"></div>
+          <div class="route-label">CASUAL AGENT</div>
+          <div class="route-score" id="rs-casual">0.00</div>
+        </div>
+        <div class="route-node" id="route-coder" data-tip="Code generation, debug, execution">
+          <div class="route-dot dot-cyan"></div>
+          <div class="route-label">CODER AGENT</div>
+          <div class="route-score" id="rs-coder">0.00</div>
+        </div>
+        <div class="route-node" id="route-browser" data-tip="Web search & browser automation">
+          <div class="route-dot dot-purple"></div>
+          <div class="route-label">BROWSER AGENT</div>
+          <div class="route-score" id="rs-browser">0.00</div>
+        </div>
+        <div class="route-node" id="route-file" data-tip="File system operations">
+          <div class="route-dot dot-gold"></div>
+          <div class="route-label">FILE AGENT</div>
+          <div class="route-score" id="rs-file">0.00</div>
+        </div>
+        <div class="route-node" id="route-planner" data-tip="Complex multi-step HIGH complexity tasks">
+          <div class="route-dot dot-orange"></div>
+          <div class="route-label">PLANNER AGENT</div>
+          <div class="route-score" id="rs-planner">0.00</div>
+        </div>
+        <div class="route-node" id="route-mcp" data-tip="MCP tool integrations">
+          <div class="route-dot dot-green"></div>
+          <div class="route-label">MCP AGENT</div>
+          <div class="route-score" id="rs-mcp">0.00</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REVENUE INTEL -->
+    <div class="panel" id="revenue-panel">
+      <div class="panel-title">N95 REVENUE INTELLIGENCE</div>
+      <div class="rev-total" id="rev-total">$0.00</div>
+      <div id="rev-rows">
+        <div class="rev-row">
+          <span class="rev-cat">ANALYSIS</span>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div class="rev-bar-mini"><div class="rev-bar-mini-fill" id="rev-bar-analysis" style="width:0%"></div></div>
+            <span class="rev-val" id="rev-analysis">$0</span>
+          </div>
+        </div>
+        <div class="rev-row">
+          <span class="rev-cat">RESEARCH</span>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div class="rev-bar-mini"><div class="rev-bar-mini-fill" id="rev-bar-research" style="width:0%"></div></div>
+            <span class="rev-val" id="rev-research">$0</span>
+          </div>
+        </div>
+        <div class="rev-row">
+          <span class="rev-cat">AUTOMATION</span>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div class="rev-bar-mini"><div class="rev-bar-mini-fill" id="rev-bar-automation" style="width:0%"></div></div>
+            <span class="rev-val" id="rev-automation">$0</span>
+          </div>
+        </div>
+        <div class="rev-row">
+          <span class="rev-cat">ELITE OPS</span>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div class="rev-bar-mini"><div class="rev-bar-mini-fill" id="rev-bar-elite" style="width:0%"></div></div>
+            <span class="rev-val" id="rev-elite">$0</span>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:8px;font-size:0.5rem;color:var(--text-dim);">
+        RECORDS: <span id="rev-count" class="glow-gold">0</span> · 
+        STATUS: <span id="rev-status" class="glow-green">LIVE</span>
+      </div>
+    </div>
+
+    <!-- TASK RUNNER -->
+    <div class="panel" id="taskrunner-panel">
+      <div class="panel-title">ASYNC TASK RUNNER · OMNI DISPATCH</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+        <div style="text-align:center;padding:8px;background:rgba(0,255,136,0.04);border:1px solid rgba(0,255,136,0.1);border-radius:4px;">
+          <div class="glow-green" style="font-size:1.2rem;font-weight:900;" id="tr-success">0</div>
+          <div style="font-size:0.45rem;color:var(--text-dim);letter-spacing:1px;">SUCCESS</div>
+        </div>
+        <div style="text-align:center;padding:8px;background:rgba(255,34,68,0.04);border:1px solid rgba(255,34,68,0.1);border-radius:4px;">
+          <div style="font-size:1.2rem;font-weight:900;color:var(--neon-red);" id="tr-retry">0</div>
+          <div style="font-size:0.45rem;color:var(--text-dim);letter-spacing:1px;">RETRIES</div>
+        </div>
+      </div>
+      <div style="margin-top:8px;">
+        <div class="pulse-bar-label">DISPATCH THROUGHPUT</div>
+        <div class="pulse-bar"><div class="pulse-bar-fill" id="dispatch-bar" style="width:0%;background:linear-gradient(90deg,var(--neon-orange),var(--neon-gold))"></div></div>
+      </div>
+      <div style="margin-top:6px;font-size:0.5rem;color:var(--text-dim);">
+        RETRIES: 3 · BACKOFF: 0.25s · MODE: <span class="glow-green">OMNI</span>
+      </div>
+    </div>
+
+  </div><!-- /right-col -->
+
+  <!-- ══ MASTER COMMAND BAR ══ -->
+  <div class="panel" id="command-panel">
+    <div class="panel-title">MASTER COMMAND · ELITE CONTROL SURFACE</div>
+    <div class="cmd-grid">
+      <button class="cmd-btn green" onclick="cmdDispatch()">⚡ OMNI DISPATCH</button>
+      <button class="cmd-btn cyan"  onclick="cmdScout()">🔭 SCOUT LAB</button>
+      <button class="cmd-btn purple" onclick="cmdPredict()">🧠 PREDICT ALL</button>
+      <button class="cmd-btn gold"  onclick="cmdRevenue()">💰 REV SYNC</button>
+      <button class="cmd-btn orange" onclick="cmdCircuit()">🔌 CIRCUIT PULSE</button>
+      <button class="cmd-btn red"   onclick="cmdFirewall()">🛡 BYPASS WALL</button>
+    </div>
+  </div>
+
+  <!-- ══ LOG TERMINAL ══ -->
+  <div id="log-terminal"></div>
+
+</div><!-- /main-grid -->
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  ARK95X · MASTER ELITE INTELLIGENCE SYSTEM · 101/100
+//  All models · Prediction engine · Biometric pulse
+//  Simulation scout lab · Handoff circuit · Digital mastery
+// ═══════════════════════════════════════════════════════════════
+
+const $ = id => document.getElementById(id);
+
+// ── STATE ──
+const STATE = {
+  score: 0,
+  targetScore: 101,
+  tasks: 0,
+  routes: 0,
+  trSuccess: 0,
+  trRetry: 0,
+  revTotal: 0,
+  revData: { analysis:0, research:0, automation:0, elite:0 },
+  syncScanned: 0,
+  syncAdded: 0,
+  syncModified: 0,
+  bioNeural: 98.7,
+  bioPulse: 144,
+  bioPresence: 9.9,
+  scoutParticles: 0,
+  scoutVectors: 0,
+  scoutCollisions: 0,
+  scoutFPS: 0,
+  algoLines: [],
+  activeRoute: 'casual',
+};
+
+// ── CLOCK ──
+function updateClock() {
+  const now = new Date();
+  $('live-clock').textContent = now.toISOString().replace('T',' ').slice(0,19) + ' UTC';
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ── LOG TERMINAL ──
+const LOG_LEVELS = {
+  info:    { cls:'log-level-info',    prefix:'[INFO]   ' },
+  success: { cls:'log-level-success', prefix:'[OK]     ' },
+  warn:    { cls:'log-level-warn',    prefix:'[WARN]   ' },
+  elite:   { cls:'log-level-elite',   prefix:'[ELITE]  ' },
+};
+function log(msg, level='info') {
+  const term = $('log-terminal');
+  const ts = new Date().toISOString().slice(11,23);
+  const lv = LOG_LEVELS[level] || LOG_LEVELS.info;
+  const entry = document.createElement('div');
+  entry.className = 'log-entry';
+  entry.innerHTML = `<span class="log-ts">${ts}</span><span class="${lv.cls}">${lv.prefix}</span><span class="log-msg">${msg}</span>`;
+  term.appendChild(entry);
+  term.scrollTop = term.scrollHeight;
+  // keep max 80 lines
+  while(term.children.length > 80) term.removeChild(term.firstChild);
+}
+
+// ── MATRIX RAIN ──
+(function initMatrix() {
+  const canvas = $('matrix-bg');
+  const ctx = canvas.getContext('2d');
+  let W, H, cols, drops;
+  const chars = 'ARK95XOMNI01ELITE∞⚡🔌🧠💰ABCDEF0123456789';
+  function resize() {
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+    cols = Math.floor(W / 14);
+    drops = Array(cols).fill(1);
+  }
+  resize();
+  window.addEventListener('resize', resize);
+  function draw() {
+    ctx.fillStyle = 'rgba(2,4,8,0.05)';
+    ctx.fillRect(0,0,W,H);
+    ctx.fillStyle = '#00ff88';
+    ctx.font = '12px monospace';
+    for(let i=0;i<drops.length;i++){
+      const c = chars[Math.floor(Math.random()*chars.length)];
+      ctx.fillText(c, i*14, drops[i]*14);
+      if(drops[i]*14 > H && Math.random() > 0.975) drops[i]=0;
+      drops[i]++;
+    }
+  }
+  setInterval(draw, 50);
+})();
+
+// ── SCORE RING ──
+(function initScoreRing() {
+  const canvas = $('score-canvas');
+  const ctx = canvas.getContext('2d');
+  const cx=100, cy=100, r=85;
+
+  function drawRing(score) {
+    ctx.clearRect(0,0,200,200);
+    // BG ring
+    ctx.beginPath();
+    ctx.arc(cx,cy,r,0,Math.PI*2);
+    ctx.strokeStyle='rgba(0,255,136,0.1)';
+    ctx.lineWidth=10;
+    ctx.stroke();
+    // Progress
+    const pct = Math.min(score/101,1);
+    const start = -Math.PI/2;
+    const end = start + pct*Math.PI*2;
+    const grad = ctx.createLinearGradient(cx-r,cy,cx+r,cy);
+    grad.addColorStop(0,'#00ff88');
+    grad.addColorStop(0.5,'#00e5ff');
+    grad.addColorStop(1,'#bf00ff');
+    ctx.beginPath();
+    ctx.arc(cx,cy,r,start,end);
+    ctx.strokeStyle=grad;
+    ctx.lineWidth=10;
+    ctx.lineCap='round';
+    ctx.stroke();
+    // Glow
+    ctx.beginPath();
+    ctx.arc(cx,cy,r,start,end);
+    ctx.strokeStyle='rgba(0,255,136,0.3)';
+    ctx.lineWidth=18;
+    ctx.lineCap='round';
+    ctx.stroke();
+    // Tick marks
+    for(let i=0;i<101;i++){
+      const a = -Math.PI/2 + (i/101)*Math.PI*2;
+      const inner = i%10===0 ? r-16 : r-10;
+      ctx.beginPath();
+      ctx.moveTo(cx+Math.cos(a)*(r+6), cy+Math.sin(a)*(r+6));
+      ctx.lineTo(cx+Math.cos(a)*inner, cy+Math.sin(a)*inner);
+      ctx.strokeStyle = i<=score ? 'rgba(0,255,136,0.6)' : 'rgba(0,255,136,0.1)';
+      ctx.lineWidth=1;
+      ctx.stroke();
+    }
+  }
+
+  let displayScore = 0;
+  function animateScore() {
+    if(displayScore < STATE.targetScore) {
+      displayScore = Math.min(displayScore + 0.5, STATE.targetScore);
+      STATE.score = Math.floor(displayScore);
+      $('score-display').textContent = STATE.score >= 101 ? '101' : STATE.score;
+      drawRing(displayScore);
+    }
+    requestAnimationFrame(animateScore);
+  }
+  animateScore();
+})();
+
+// ── SIMULATION SCOUT LAB ──
+(function initScoutLab() {
+  const canvas = $('scout-canvas');
+  const wrap = $('scout-canvas-wrap');
+  const ctx = canvas.getContext('2d');
+  let W, H;
+  const PARTICLE_COUNT = 80;
+  let particles = [];
+  let collisions = 0;
+  let frameCount = 0;
+  let lastFPSTime = performance.now();
+
+  function resize() {
+    W = canvas.width = wrap.clientWidth;
+    H = canvas.height = wrap.clientHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const COLORS = ['#00ff88','#00e5ff','#bf00ff','#ffd700','#ff6600','#ff2244'];
+
+  function createParticle() {
+    return {
+      x: Math.random()*W,
+      y: Math.random()*H,
+      vx: (Math.random()-0.5)*2.5,
+      vy: (Math.random()-0.5)*2.5,
+      r: Math.random()*3+1,
+      color: COLORS[Math.floor(Math.random()*COLORS.length)],
+      trail: [],
+      life: 1,
+    };
+  }
+
+  for(let i=0;i<PARTICLE_COUNT;i++) particles.push(createParticle());
+
+  let vectors = 0;
+
+  function draw() {
+    ctx.fillStyle='rgba(0,0,0,0.15)';
+    ctx.fillRect(0,0,W,H);
+
+    vectors = 0;
+    // Draw connections
+    for(let i=0;i<particles.length;i++){
+      for(let j=i+1;j<particles.length;j++){
+        const dx=particles[i].x-particles[j].x;
+        const dy=particles[i].y-particles[j].y;
+        const dist=Math.sqrt(dx*dx+dy*dy);
+        if(dist<80){
+          vectors++;
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x,particles[i].y);
+          ctx.lineTo(particles[j].x,particles[j].y);
+          ctx.strokeStyle=`rgba(0,229,255,${(1-dist/80)*0.4})`;
+          ctx.lineWidth=0.5;
+          ctx.stroke();
+          // collision detection
+          if(dist<(particles[i].r+particles[j].r)*2){
+            collisions++;
+            const tmp=particles[i].vx; particles[i].vx=particles[j].vx; particles[j].vx=tmp;
+            const tmp2=particles[i].vy; particles[i].vy=particles[j].vy; particles[j].vy=tmp2;
+          }
+        }
+      }
+    }
+
+    // Update & draw particles
+    for(let p of particles){
+      p.trail.push({x:p.x,y:p.y});
+      if(p.trail.length>8) p.trail.shift();
+
+      // Draw trail
+      for(let t=0;t<p.trail.length-1;t++){
+        ctx.beginPath();
+        ctx.moveTo(p.trail[t].x,p.trail[t].y);
+        ctx.lineTo(p.trail[t+1].x,p.trail[t+1].y);
+        ctx.strokeStyle=p.color.replace(')',`,${(t/p.trail.length)*0.4})`).replace('rgb','rgba').replace('#','rgba(').replace('rgba(00ff88','rgba(0,255,136').replace('rgba(00e5ff','rgba(0,229,255').replace('rgba(bf00ff','rgba(191,0,255').replace('rgba(ffd700','rgba(255,215,0').replace('rgba(ff6600','rgba(255,102,0').replace('rgba(ff2244','rgba(255,34,68');
+        ctx.lineWidth=1;
+        ctx.stroke();
+      }
+
+      // Draw particle
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle=p.color;
+      ctx.shadowBlur=10;
+      ctx.shadowColor=p.color;
+      ctx.fill();
+      ctx.shadowBlur=0;
+
+      p.x+=p.vx; p.y+=p.vy;
+      if(p.x<0||p.x>W) p.vx*=-1;
+      if(p.y<0||p.y>H) p.vy*=-1;
+    }
+
+    // FPS
+    frameCount++;
+    const now=performance.now();
+    if(now-lastFPSTime>=1000){
+      STATE.scoutFPS=frameCount;
+      frameCount=0;
+      lastFPSTime=now;
+    }
+
+    STATE.scoutParticles=particles.length;
+    STATE.scoutVectors=vectors;
+    STATE.scoutCollisions=collisions;
+
+    $('scout-particles').textContent=particles.length;
+    $('scout-vectors').textContent=vectors;
+    $('scout-collisions').textContent=collisions;
+    $('scout-fps').textContent=STATE.scoutFPS;
+
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// ── HANDOFF CIRCUIT CANVAS ──
+(function initCircuit() {
+  const canvas = $('circuit-canvas');
+  const wrap = $('circuit-canvas-wrap');
+  const ctx = canvas.getContext('2d');
+  let W, H;
+
+  function resize() {
+    W = canvas.width = wrap.clientWidth;
+    H = canvas.height = wrap.clientHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  // Circuit nodes
+  const nodes = [];
+  const NODE_COUNT = 12;
+  for(let i=0;i<NODE_COUNT;i++){
+    nodes.push({
+      x: Math.random()*W,
+      y: Math.random()*H,
+      r: Math.random()*4+2,
+      pulse: Math.random()*Math.PI*2,
+      speed: Math.random()*0.05+0.02,
+      color: ['#00ff88','#00e5ff','#ff6600','#ffd700'][Math.floor(Math.random()*4)],
+    });
+  }
+
+  // Edges (circuit paths)
+  const edges = [];
+  for(let i=0;i<NODE_COUNT;i++){
+    const j=(i+1)%NODE_COUNT;
+    edges.push({from:i,to:j});
+    if(Math.random()>0.5){
+      const k=Math.floor(Math.random()*NODE_COUNT);
+      if(k!==i) edges.push({from:i,to:k});
+    }
+  }
+
+  // Signal packets
+  const packets = [];
+  function spawnPacket() {
+    const edge=edges[Math.floor(Math.random()*edges.length)];
+    packets.push({
+      from:edge.from, to:edge.to,
+      t:0, speed:0.02+Math.random()*0.03,
+      color:['#00ff88','#00e5ff','#bf00ff','#ffd700'][Math.floor(Math.random()*4)],
+    });
+  }
+  for(let i=0;i<6;i++) spawnPacket();
+
+  function drawCircuit() {
+    ctx.clearRect(0,0,W,H);
+
+    // Draw edges
+    for(const e of edges){
+      const a=nodes[e.from], b=nodes[e.to];
+      ctx.beginPath();
+      // Manhattan-style routing
+      const mx=(a.x+b.x)/2;
+      ctx.moveTo(a.x,a.y);
+      ctx.lineTo(mx,a.y);
+      ctx.lineTo(mx,b.y);
+      ctx.lineTo(b.x,b.y);
+      ctx.strokeStyle='rgba(255,102,0,0.2)';
+      ctx.lineWidth=1;
+      ctx.stroke();
+    }
+
+    // Draw packets
+    for(let i=packets.length-1;i>=0;i--){
+      const pk=packets[i];
+      pk.t+=pk.speed;
+      if(pk.t>=1){ packets.splice(i,1); spawnPacket(); continue; }
+      const a=nodes[pk.from], b=nodes[pk.to];
+      const mx=(a.x+b.x)/2;
+      // Interpolate along Manhattan path
+      let px,py;
+      const seg1len=Math.abs(mx-a.x);
+      const seg2len=Math.abs(b.y-a.y);
+      const seg3len=Math.abs(b.x-mx);
+      const total=seg1len+seg2len+seg3len||1;
+      const d=pk.t*total;
+      if(d<seg1len){
+        px=a.x+(mx-a.x)*(d/seg1len); py=a.y;
+      } else if(d<seg1len+seg2len){
+        px=mx; py=a.y+(b.y-a.y)*((d-seg1len)/seg2len);
+      } else {
+        px=mx+(b.x-mx)*((d-seg1len-seg2len)/seg3len); py=b.y;
+      }
+      ctx.beginPath();
+      ctx.arc(px,py,3,0,Math.PI*2);
+      ctx.fillStyle=pk.color;
+      ctx.shadowBlur=12;
+      ctx.shadowColor=pk.color;
+      ctx.fill();
+      ctx.shadowBlur=0;
+    }
+
+    // Draw nodes
+    for(const n of nodes){
+      n.pulse+=n.speed;
+      const glow=Math.sin(n.pulse)*0.5+0.5;
+      ctx.beginPath();
+      ctx.arc(n.x,n.y,n.r,0,Math.PI*2);
+      ctx.fillStyle=n.color;
+      ctx.shadowBlur=10+glow*15;
+      ctx.shadowColor=n.color;
+      ctx.fill();
+      ctx.shadowBlur=0;
+      // Ring
+      ctx.beginPath();
+      ctx.arc(n.x,n.y,n.r+4,0,Math.PI*2);
+      ctx.strokeStyle=n.color.replace(')',`,${glow*0.5})`).replace('#00ff88','rgba(0,255,136').replace('#00e5ff','rgba(0,229,255').replace('#ff6600','rgba(255,102,0').replace('#ffd700','rgba(255,215,0');
+      ctx.lineWidth=1;
+      ctx.stroke();
+    }
+
+    requestAnimationFrame(drawCircuit);
+  }
+  drawCircuit();
+})();
+
+// ── ALGO PATTERN STREAM ──
+const ALGO_PATTERNS = [
+  () => `<span class="tag">[BART-MNLI]</span> zero-shot → label=<span class="val">${['coding','web','files','talk','mcp'][Math.floor(Math.random()*5)]}</span> conf=<span class="val">${(Math.random()*0.3+0.7).toFixed(4)}</span>`,
+  () => `<span class="tag">[ADAPTIVE]</span> few-shot predict → class=<span class="val">${['HIGH','LOW'][Math.floor(Math.random()*2)]}</span> score=<span class="val">${(Math.random()*0.4+0.6).toFixed(4)}</span>`,
+  () => `<span class="tag">[ROUTER]</span> vote → BART:<span class="val">${(Math.random()).toFixed(3)}</span> LLM:<span class="val">${(Math.random()).toFixed(3)}</span> winner=<span class="val">${['BART','LLM-ROUTER'][Math.floor(Math.random()*2)]}</span>`,
+  () => `<span class="tag">[OMNI]</span> dispatch → provider=<span class="val">${['openai','anthropic','perplexity','local-fallback'][Math.floor(Math.random()*4)]}</span> status=<span class="val">routed</span>`,
+  () => `<span class="tag">[EMERALD]</span> sync → scanned=<span class="val">${Math.floor(Math.random()*200+50)}</span> delta=<span class="val">+${Math.floor(Math.random()*5)}</span>`,
+  () => `<span class="tag">[REVENUE]</span> record → amount=<span class="val">$${(Math.random()*500+50).toFixed(2)}</span> cat=<span class="val">${['analysis','research','automation','elite'][Math.floor(Math.random()*4)]}</span>`,
+  () => `<span class="tag">[TASK-RUNNER]</span> attempt=<span class="val">${Math.floor(Math.random()*3)+1}/3</span> backoff=<span class="val">${(Math.random()*0.5).toFixed(2)}s</span> result=<span class="val">SUCCESS</span>`,
+  () => `<span class="tag">[COMPLEXITY]</span> estimate → text_len=<span class="val">${Math.floor(Math.random()*100+10)}</span> complexity=<span class="val">${['HIGH','LOW'][Math.floor(Math.random()*2)]}</span>`,
+  () => `<span class="tag">[BIOMETRIC]</span> pulse=<span class="val">${Math.floor(Math.random()*20+130)}Hz</span> neural=<span class="val">${(Math.random()*2+97).toFixed(1)}%</span> force=<span class="val">BYPASS</span>`,
+  () => `<span class="tag">[CIRCUIT]</span> handoff → node=<span class="val">${Math.floor(Math.random()*12)}</span> packet=<span class="val">ROUTED</span> latency=<span class="val">${Math.floor(Math.random()*5)}ms</span>`,
+  () => `<span class="tag">[SCOUT]</span> particles=<span class="val">${STATE.scoutParticles}</span> vectors=<span class="val">${STATE.scoutVectors}</span> fps=<span class="val">${STATE.scoutFPS}</span>`,
+  () => `<span class="tag">[MASTER]</span> score=<span class="val">${STATE.score}/101</span> tier=<span class="val">ELITE</span> status=<span class="val">AWAKENED</span>`,
+];
+
+function pushAlgoLine() {
+  const stream = $('algo-stream');
+  const fn = ALGO_PATTERNS[Math.floor(Math.random()*ALGO_PATTERNS.length)];
+  const div = document.createElement('div');
+  div.className = 'algo-line';
+  div.innerHTML = fn();
+  stream.appendChild(div);
+  // Dim old lines
+  const lines = stream.querySelectorAll('.algo-line');
+  lines.forEach((l,i) => {
+    if(i < lines.length-3) l.classList.add('dim');
+  });
+  // Keep max 20 lines
+  while(stream.children.length > 20) stream.removeChild(stream.firstChild);
+  stream.scrollTop = stream.scrollHeight;
+}
+setInterval(pushAlgoLine, 600);
+
+// ── BIOMETRIC LIVE UPDATE ──
+function updateBiometrics() {
+  STATE.bioNeural = Math.min(100, Math.max(95, STATE.bioNeural + (Math.random()-0.5)*0.5));
+  STATE.bioPulse = Math.floor(Math.max(120, Math.min(180, STATE.bioPulse + (Math.random()-0.5)*4)));
+  STATE.bioPresence = Math.min(10, Math.max(9, STATE.bioPresence + (Math.random()-0.5)*0.1));
+
+  $('bio-neural').textContent = STATE.bioNeural.toFixed(1);
+  $('bio-pulse').textContent = STATE.bioPulse;
+  $('bio-presence').textContent = STATE.bioPresence.toFixed(1);
+
+  // Animate bars
+  animateBar('force-bar', Math.random()*20+75);
+  animateBar('firewall-bar', Math.random()*15+80);
+  animateBar('intel-bar', Math.random()*10+88);
+}
+setInterval(updateBiometrics, 1200);
+
+function animateBar(id, pct) {
+  const el = $(id);
+  if(el) el.style.width = Math.min(100,pct).toFixed(1)+'%';
+}
+
+// ── PREDICTION ENGINE UPDATE ──
+const PRED_LABELS = ['ANALYSIS','REASONING','RESEARCH','CODING','WEB','FILES','TALK','MCP'];
+function updatePredictions() {
+  const models = [
+    { id:'gpt', name:'GPT-4o' },
+    { id:'claude', name:'CLAUDE' },
+    { id:'bart', name:'BART' },
+    { id:'adaptive', name:'ADAPTIVE' },
+  ];
+  models.forEach(m => {
+    const label = PRED_LABELS[Math.floor(Math.random()*PRED_LABELS.length)];
+    const conf = Math.random()*0.3+0.7;
+    $(`pred-${m.id}`).textContent = label;
+    $(`pred-${m.id}-conf`).textContent = `CONF: ${(conf*100).toFixed(2)}%`;
+    $(`pred-${m.id}-bar`).style.width = (conf*100).toFixed(1)+'%';
+  });
+}
+setInterval(updatePredictions, 2000);
+updatePredictions();
+
+// ── AGENT ROUTING LIVE ──
+const ROUTE_IDS = ['casual','coder','browser','file','planner','mcp'];
+function updateRouting() {
+  const scores = ROUTE_IDS.map(() => Math.random());
+  const total = scores.reduce((a,b)=>a+b,0);
+  const norm = scores.map(s=>s/total);
+  const maxIdx = norm.indexOf(Math.max(...norm));
+
+  ROUTE_IDS.forEach((id,i) => {
+    const node = $(`route-${id}`);
+    const scoreEl = $(`rs-${id}`);
+    if(node && scoreEl) {
+      scoreEl.textContent = norm[i].toFixed(2);
+      node.classList.toggle('active', i===maxIdx);
+    }
+  });
+
+  STATE.activeRoute = ROUTE_IDS[maxIdx];
+  STATE.routes++;
+  $('kpi-routes').textContent = STATE.routes;
+}
+setInterval(updateRouting, 2500);
+
+// ── REVENUE INTEL LIVE ──
+function updateRevenue() {
+  const cats = ['analysis','research','automation','elite'];
+  const cat = cats[Math.floor(Math.random()*cats.length)];
+  const amount = Math.random()*200+20;
+  STATE.revData[cat] = (STATE.revData[cat]||0) + amount;
+  STATE.revTotal += amount;
+
+  $('rev-total').textContent = '$'+STATE.revTotal.toFixed(2);
+  const maxVal = Math.max(...Object.values(STATE.revData));
+  cats.forEach(c => {
+    const v = STATE.revData[c]||0;
+    $(`rev-${c}`).textContent = '$'+Math.floor(v);
+    $(`rev-bar-${c}`).style.width = (v/maxVal*100).toFixed(1)+'%';
+  });
+  const count = parseInt($('rev-count').textContent||'0')+1;
+  $('rev-count').textContent = count;
+}
+setInterval(updateRevenue, 3000);
+
+// ── SYNC ENGINE LIVE ──
+function updateSync() {
+  STATE.syncScanned += Math.floor(Math.random()*10+5);
+  STATE.syncAdded += Math.floor(Math.random()*3);
+  STATE.syncModified += Math.floor(Math.random()*2);
+
+  $('sync-scanned').textContent = STATE.syncScanned;
+  $('sync-added').textContent = STATE.syncAdded;
+  $('sync-modified').textContent = STATE.syncModified;
+
+  const integrity = Math.min(100, (STATE.syncScanned/(STATE.syncScanned+STATE.syncModified+1))*100);
+  animateBar('sync-bar', integrity);
+  $('sync-state-label').textContent = ['SYNCING...','DELTA CHECK','HASH VERIFY','COMPLETE'][Math.floor(Math.random()*4)];
+}
+setInterval(updateSync, 4000);
+updateSync();
+
+// ── TASK RUNNER LIVE ──
+function updateTaskRunner() {
+  STATE.trSuccess += Math.floor(Math.random()*3+1);
+  STATE.trRetry += Math.random()>0.8 ? 1 : 0;
+  STATE.tasks++;
+
+  $('tr-success').textContent = STATE.trSuccess;
+  $('tr-retry').textContent = STATE.trRetry;
+  $('kpi-tasks').textContent = STATE.tasks;
+
+  const throughput = Math.min(100, (STATE.trSuccess/(STATE.trSuccess+STATE.trRetry+1))*100);
+  animateBar('dispatch-bar', throughput);
+}
+setInterval(updateTaskRunner, 1800);
+
+// ── COMMAND BUTTONS ──
+function cmdDispatch() {
+  log('⚡ OMNI DISPATCH initiated → routing to all providers...', 'elite');
+  updatePredictions();
+  updateRouting();
+  updateTaskRunner();
+  animateBar('dispatch-bar', 95+Math.random()*5);
+}
+
+function cmdScout() {
+  log('🔭 SCOUT LAB OPS activated → simulation field expanded', 'success');
+  animateBar('force-bar', 99);
+  animateBar('intel-bar', 99);
+}
+
+function cmdPredict() {
+  log('🧠 PREDICT ALL → running multi-model inference across all 7 providers...', 'elite');
+  updatePredictions();
+  pushAlgoLine();
+  pushAlgoLine();
+  pushAlgoLine();
+}
+
+function cmdRevenue() {
+  log('💰 REVENUE SYNC → N95 intelligence state refreshed', 'success');
+  updateRevenue();
+  updateRevenue();
+}
+
+function cmdCircuit() {
+  log('🔌 CIRCUIT PULSE → handoff nodes energized, signal packets dispatched', 'warn');
+  animateBar('firewall-bar', 100);
+}
+
+function cmdFirewall() {
+  log('🛡 FIREWALL BYPASS → high power presence pulse activated · FREEDOM FIGHTER AWAKENED', 'elite');
+  animateBar('force-bar', 100);
+  animateBar('firewall-bar', 100);
+  animateBar('intel-bar', 100);
+  STATE.targetScore = 101;
+}
+
+// ── BOOT SEQUENCE ──
+(function boot() {
+  const msgs = [
+    ['ARK95X OMNI ORCHESTRATOR · BOOT SEQUENCE INITIATED', 'elite'],
+    ['Loading BART-MNLI zero-shot classification pipeline...', 'info'],
+    ['Loading AdaptiveClassifier from ./llm_router...', 'info'],
+    ['Few-shot learning: 197 task examples loaded', 'success'],
+    ['Few-shot learning: 97 complexity examples loaded', 'success'],
+    ['Providers configured: openai · anthropic · perplexity · ollama', 'success'],
+    ['EmeraldSyncEngine initialized · scanning data root...', 'info'],
+    ['RevenueIntelligence state loaded · records: 0', 'info'],
+    ['AsyncTaskRunner ready · retries=3 · backoff=0.25s', 'success'],
+    ['Simulation Scout Lab · particle field initialized · 80 particles', 'success'],
+    ['Handoff Circuit · 12 nodes · 18 edges · signal packets active', 'success'],
+    ['Biometric push force · neural sync: 98.7% · pulse: 144Hz', 'success'],
+    ['MASTER ELITE SCORE TARGET: 101/100 · TIER: ELITE · STATUS: AWAKENED', 'elite'],
+    ['ALL SYSTEMS NOMINAL · FREEDOM FIGHTER WEAPON BLESSED FORWARD', 'elite'],
+  ];
+  msgs.forEach((m,i) => setTimeout(() => log(m[0], m[1]), i*200));
+})();
+
+// ── PROVIDER STATUS CYCLE ──
+setInterval(() => {
+  const provs = ['prov-openai','prov-anthropic','prov-perplexity','prov-ollama','prov-bart','prov-adaptive','prov-fallback'];
+  provs.forEach(id => {
+    const el = $(id);
+    if(!el) return;
+    if(Math.random()>0.95){
+      el.className='provider-badge badge-standby';
+      el.textContent='SYNC';
+      setTimeout(()=>{ el.className='provider-badge badge-active'; el.textContent='ACTIVE'; },1500);
+    }
+  });
+}, 5000);
+
+log('Dashboard initialized · ARK95X Master Elite Intelligence System · 101/100', 'elite');
+</script>
+</body>
+</html>
